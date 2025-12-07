@@ -1,49 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Alert, AppState } from 'react-native'; // AppState eklendi
 import CustomButton from '../components/CustomButton';
 
-// Sabitler
-const FOCUS_TIME_MINUTES = 25; // 25 Dakika
-const INITIAL_TIME = FOCUS_TIME_MINUTES * 60; // Saniye cinsinden
+const FOCUS_TIME_MINUTES = 25; 
+const INITIAL_TIME = FOCUS_TIME_MINUTES * 60;
 
 export default function HomeScreen() {
   const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
   const [isActive, setIsActive] = useState(false);
-  const [category, setCategory] = useState('Ders'); // Varsayılan kategori
-  const [distractionCount, setDistractionCount] = useState(0); // Şimdilik manuel, sonra otomatik olacak
+  const [category, setCategory] = useState('Ders');
+  const [distractionCount, setDistractionCount] = useState(0);
 
-  // Kategoriler Listesi
+  // AppState'i takip etmek için ref kullanıyoruz
+  const appState = useRef(AppState.currentState);
+
   const categories = ["Ders", "Kodlama", "Kitap", "Proje"];
 
-  // Sayaç Mantığı (useEffect)
+  // --- YENİ EKLENEN KISIM BAŞLANGICI (AppState Mantığı) ---
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      
+      // 1. Durum: Uygulama Arka Plana (Background) Geçiyor
+      if (
+        appState.current.match(/active/) && 
+        nextAppState.match(/inactive|background/)
+      ) {
+        // Eğer sayaç çalışıyorsa durdur ve ceza puanı ekle
+        if (isActive) {
+          setIsActive(false);
+          setDistractionCount(prev => prev + 1);
+          console.log("Dikkat dağınıklığı algılandı! Sayaç durdu.");
+        }
+      }
+
+      // 2. Durum: Uygulama Tekrar Ön Plana (Active) Geliyor
+      if (
+        appState.current.match(/inactive|background/) && 
+        nextAppState === 'active'
+      ) {
+        // Eğer süre bitmemişse ve kullanıcı bir seansın ortasındaysa soralım
+        if (timeLeft < INITIAL_TIME && timeLeft > 0) {
+            Alert.alert(
+                "Dikkat Dağınıklığı!",
+                "Uygulamadan ayrıldınız. Sayacı devam ettirmek istiyor musunuz?",
+                [
+                    {
+                        text: "Hayır, Bitir",
+                        onPress: () => handleReset(), // Sıfırla
+                        style: "cancel"
+                    },
+                    { 
+                        text: "Evet, Devam Et", 
+                        onPress: () => setIsActive(true) // Kaldığı yerden devam
+                    }
+                ]
+            );
+        }
+      }
+
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isActive, timeLeft]); // isActive ve timeLeft değiştikçe listener güncellenmeli
+  // --- YENİ EKLENEN KISIM BİTİŞİ ---
+
+  // Sayaç Mantığı (Eski kodla aynı)
   useEffect(() => {
     let interval = null;
-
     if (isActive && timeLeft > 0) {
-      // Sayaç aktifse her 1 saniyede bir azalt
       interval = setInterval(() => {
         setTimeLeft((prevTime) => prevTime - 1);
       }, 1000);
     } else if (timeLeft === 0) {
-      // Süre bittiğinde
       setIsActive(false);
       clearInterval(interval);
       Alert.alert("Tebrikler!", "Odaklanma seansı tamamlandı.");
-      // Buraya daha sonra veritabanı kayıt kodu gelecek
+      // Veritabanı kayıt işlemi bir sonraki adımda buraya gelecek
     }
-
-    // Temizlik (Component kapanırsa veya durursa interval'i temizle)
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
 
-  // Zamanı Formatlama (Örn: 1500 -> 25:00)
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  // Buton Fonksiyonları
   const handleStart = () => setIsActive(true);
   const handlePause = () => setIsActive(false);
   const handleReset = () => {
@@ -54,10 +99,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Üst Başlık */}
       <Text style={styles.headerTitle}>Odaklanma Zamanı</Text>
 
-      {/* Kategori Seçimi */}
       <View style={styles.categoryContainer}>
         <Text style={styles.label}>Kategori Seç:</Text>
         <View style={styles.categoryRow}>
@@ -65,7 +108,7 @@ export default function HomeScreen() {
             <CustomButton
               key={cat}
               title={cat}
-              onPress={() => !isActive && setCategory(cat)} // Sayaç çalışırken kategori değişmesin
+              onPress={() => !isActive && setCategory(cat)}
               color={category === cat ? '#4A90E2' : '#BDC3C7'}
               style={{ minWidth: 70, paddingHorizontal: 10, paddingVertical: 8 }}
             />
@@ -73,7 +116,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Sayaç Göstergesi */}
       <View style={styles.timerContainer}>
         <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
         <Text style={styles.statusText}>
@@ -81,7 +123,6 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      {/* Kontrol Butonları */}
       <View style={styles.controls}>
         {!isActive ? (
           <CustomButton title="BAŞLAT" onPress={handleStart} color="#2ECC71" />
@@ -91,10 +132,11 @@ export default function HomeScreen() {
         <CustomButton title="SIFIRLA" onPress={handleReset} color="#E74C3C" />
       </View>
 
-      {/* Geçici Bilgi Gösterimi (Debug için) */}
+      {/* Dikkat Dağınıklığı Göstergesi (Test İçin Önemli) */}
       <View style={styles.debugInfo}>
-        <Text>Seçili Kategori: {category}</Text>
-        <Text>Dikkat Dağınıklığı: {distractionCount}</Text>
+        <Text style={{fontWeight: 'bold'}}>İstatistikler (Canlı):</Text>
+        <Text>Kategori: {category}</Text>
+        <Text style={{color: 'red'}}>Dikkat Dağınıklığı: {distractionCount}</Text>
       </View>
     </View>
   );
@@ -138,8 +180,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 40,
     backgroundColor: '#fff',
-    elevation: 5, // Android gölge
-    shadowColor: '#000', // iOS gölge
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -161,8 +203,10 @@ const styles = StyleSheet.create({
   },
   debugInfo: {
     marginTop: 30,
-    padding: 10,
+    padding: 15,
     backgroundColor: '#ECF0F1',
     borderRadius: 5,
+    width: '90%',
+    alignItems: 'center'
   }
 });
