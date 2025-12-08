@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Alert, AppState } from 'react-native'; // AppState eklendi
 import CustomButton from '../components/CustomButton';
-
+import { saveSession } from '../storage/storageHelper';
 const FOCUS_TIME_MINUTES = 25; 
 const INITIAL_TIME = FOCUS_TIME_MINUTES * 60;
 
@@ -77,7 +77,24 @@ export default function HomeScreen() {
     } else if (timeLeft === 0) {
       setIsActive(false);
       clearInterval(interval);
-      Alert.alert("Tebrikler!", "Odaklanma seansı tamamlandı.");
+	  
+	  
+      const newSession = {
+        id: Date.now().toString(), // Benzersiz ID
+        date: new Date().toISOString(), // Şu anki tarih/saat
+        duration: FOCUS_TIME_MINUTES, // Odaklanılan süre (dakika)
+        category: category, // Seçili kategori
+        distractionCount: distractionCount // Yakalanan dikkat dağınıklığı
+      };
+
+      saveSession(newSession); // Veritabanına yaz
+      // -------------------------------
+
+	  
+	  
+      Alert.alert("Tebrikler!", "Odaklanma seansı tamamlandı ve kaydedildi.",
+	  `Seans tamamlandı ve kaydedildi.\nKategori: ${category}\nDikkat Dağınıklığı: ${distractionCount}`
+);
       // Veritabanı kayıt işlemi bir sonraki adımda buraya gelecek
     }
     return () => clearInterval(interval);
