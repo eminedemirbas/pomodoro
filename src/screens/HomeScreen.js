@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, AppState } from 'react-native'; // AppState eklendi
+import { View, Text, StyleSheet, Alert, AppState } from 'react-native';
 import CustomButton from '../components/CustomButton';
 import { saveSession } from '../storage/storageHelper';
 const FOCUS_TIME_MINUTES = 25; 
@@ -11,21 +11,17 @@ export default function HomeScreen() {
   const [category, setCategory] = useState('Ders');
   const [distractionCount, setDistractionCount] = useState(0);
 
-  // AppState'i takip etmek için ref kullanıyoruz
   const appState = useRef(AppState.currentState);
 
   const categories = ["Ders", "Kodlama", "Kitap", "Proje"];
 
-  // --- YENİ EKLENEN KISIM BAŞLANGICI (AppState Mantığı) ---
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       
-      // 1. Durum: Uygulama Arka Plana (Background) Geçiyor
       if (
         appState.current.match(/active/) && 
         nextAppState.match(/inactive|background/)
       ) {
-        // Eğer sayaç çalışıyorsa durdur ve ceza puanı ekle
         if (isActive) {
           setIsActive(false);
           setDistractionCount(prev => prev + 1);
@@ -33,12 +29,10 @@ export default function HomeScreen() {
         }
       }
 
-      // 2. Durum: Uygulama Tekrar Ön Plana (Active) Geliyor
       if (
         appState.current.match(/inactive|background/) && 
         nextAppState === 'active'
       ) {
-        // Eğer süre bitmemişse ve kullanıcı bir seansın ortasındaysa soralım
         if (timeLeft < INITIAL_TIME && timeLeft > 0) {
             Alert.alert(
                 "Dikkat Dağınıklığı!",
@@ -46,12 +40,12 @@ export default function HomeScreen() {
                 [
                     {
                         text: "Hayır, Bitir",
-                        onPress: () => handleReset(), // Sıfırla
+                        onPress: () => handleReset(),
                         style: "cancel"
                     },
                     { 
                         text: "Evet, Devam Et", 
-                        onPress: () => setIsActive(true) // Kaldığı yerden devam
+                        onPress: () => setIsActive(true)
                     }
                 ]
             );
@@ -64,10 +58,8 @@ export default function HomeScreen() {
     return () => {
       subscription.remove();
     };
-  }, [isActive, timeLeft]); // isActive ve timeLeft değiştikçe listener güncellenmeli
-  // --- YENİ EKLENEN KISIM BİTİŞİ ---
+  }, [isActive, timeLeft]);
 
-  // Sayaç Mantığı (Eski kodla aynı)
   useEffect(() => {
     let interval = null;
     if (isActive && timeLeft > 0) {
@@ -80,22 +72,20 @@ export default function HomeScreen() {
 	  
 	  
       const newSession = {
-        id: Date.now().toString(), // Benzersiz ID
-        date: new Date().toISOString(), // Şu anki tarih/saat
-        duration: FOCUS_TIME_MINUTES, // Odaklanılan süre (dakika)
-        category: category, // Seçili kategori
-        distractionCount: distractionCount // Yakalanan dikkat dağınıklığı
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        duration: FOCUS_TIME_MINUTES,
+        category: category,
+        distractionCount: distractionCount 
       };
 
-      saveSession(newSession); // Veritabanına yaz
-      // -------------------------------
+      saveSession(newSession);
 
 	  
 	  
       Alert.alert("Tebrikler!", "Odaklanma seansı tamamlandı ve kaydedildi.",
 	  `Seans tamamlandı ve kaydedildi.\nKategori: ${category}\nDikkat Dağınıklığı: ${distractionCount}`
 );
-      // Veritabanı kayıt işlemi bir sonraki adımda buraya gelecek
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
@@ -149,7 +139,7 @@ export default function HomeScreen() {
         <CustomButton title="SIFIRLA" onPress={handleReset} color="#E74C3C" />
       </View>
 
-      {/* Dikkat Dağınıklığı Göstergesi (Test İçin Önemli) */}
+      {/* Dikkat Dağınıklığı Göstergesi */}
       <View style={styles.debugInfo}>
         <Text style={{fontWeight: 'bold'}}>İstatistikler (Canlı):</Text>
         <Text>Kategori: {category}</Text>
