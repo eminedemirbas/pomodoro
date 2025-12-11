@@ -18,7 +18,6 @@ export default function ReportScreen() {
     datasets: [{ data: [] }]
   });
 
-  // Bu kanca (hook), ekran her odaklandığında çalışır
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -32,7 +31,7 @@ export default function ReportScreen() {
 
   const processStats = (sessions) => {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0]; // "2025-12-09"
+    const todayStr = now.toISOString().split('T')[0];
 
     let totalDur = 0;
     let todayDur = 0;
@@ -40,7 +39,6 @@ export default function ReportScreen() {
     const categoryMap = {};
     const last7DaysMap = {};
 
-    // Son 7 günün tarihlerini hazırla (Boş günleri 0 göstermek için)
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(now.getDate() - i);
