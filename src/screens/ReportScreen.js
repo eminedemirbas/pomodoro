@@ -58,7 +58,7 @@ export default function ReportScreen() {
         todayDur += session.duration;
       }
 
-      // 2. Kategori Verisi (Pasta Grafik)
+      // 2. Kategori Verisi
       if (categoryMap[session.category]) {
         categoryMap[session.category] += session.duration;
       } else {
