@@ -84,7 +84,7 @@ export default function HomeScreen() {
 	  
 	  
       Alert.alert("Tebrikler!", "Odaklanma seansı tamamlandı ve kaydedildi.",
-	  `Seans tamamlandı ve kaydedildi.\nKategori: ${category}\nDikkat Dağınıklığı: ${distractionCount}`
+	  `Seans tamamlandı ve kaydedildi!\nKategori: ${category}\nDikkat Dağınıklığı: ${distractionCount}`
 );
     }
     return () => clearInterval(interval);
