@@ -99,7 +99,30 @@ export default function HomeScreen() {
   const handleStart = () => setIsActive(true);
   const handlePause = () => setIsActive(false);
   const handleReset = () => {
+    // 1. Durdur
     setIsActive(false);
+
+    // 2. Geçen süreyi hesapla (Başlangıç süresi - Kalan süre)
+    const secondsPassed = INITIAL_TIME - timeLeft;
+    
+    // Eğer en az 1 saniye bile geçtiyse kaydet
+    if (secondsPassed > 0) {
+      const minutesPassed = secondsPassed / 60; // Dakikaya çevir
+
+      const sessionToSave = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        duration: minutesPassed, // Tam sayı değil, ondalıklı olabilir (örn: 5.5 dk)
+        category: category,
+        distractionCount: distractionCount
+      };
+
+      saveSession(sessionToSave);
+      
+      Alert.alert("Bilgi", `Seans yarıda kesildi ama kaydedildi.\nSüre: ${minutesPassed.toFixed(1)} dk`);
+    }
+
+    // 3. Sayacı ve verileri başa sar
     setTimeLeft(INITIAL_TIME);
     setDistractionCount(0);
   };
